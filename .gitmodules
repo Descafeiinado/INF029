@@ -1,3 +1,3 @@
-[submodule "projetos/escola"]
-	path = projetos/escola
+[submodule "ProjetoEscola"]
+	path = ProjetoEscola
 	url = https://github.com/Descafeiinado/ProjetoEscola
