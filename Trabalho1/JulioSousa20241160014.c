@@ -21,11 +21,18 @@
 
 // #################################################
 
+#include <locale.h>
 #include <stdio.h>
 #include "JulioSousa20241160014.h" // Substitua pelo seu arquivo de header renomeado
 #include <stdlib.h>
+#include <string.h> // strlen
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 DataQuebrada quebraData(char data[]);
+void remove_accents(char *text);
+int power(int base, int exp);
 
 /*
 ## função utilizada para testes  ##
@@ -77,6 +84,11 @@ int teste(int a)
   return val;
 }
 
+int is_leap_year(int year)
+{
+  return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
 /*
  Q1 = validar data
 @objetivo
@@ -90,18 +102,50 @@ int teste(int a)
     Não utilizar funções próprias de string (ex: strtok)
     pode utilizar strlen para pegar o tamanho da string
  */
-int q1(char data[])
+int q1(char date[])
 {
-  int datavalida = 1;
+  DataQuebrada dq = quebraData(date);
 
-  // quebrar a string data em strings sDia, sMes, sAno
-
-  // printf("%s\n", data);
-
-  if (datavalida)
-    return 1;
-  else
+  if (dq.valido == 0)
     return 0;
+
+  int day = dq.iDia;
+  int month = dq.iMes;
+  int year = dq.iAno;
+
+  int is_day_valid = day >= 1 && day <= 31;
+  int is_month_valid = month >= 1 && month <= 12;
+  int is_year_valid = year >= 1900 && year <= 2100;
+
+  if (!is_day_valid || !is_month_valid || !is_year_valid)
+    return 0;
+
+  int is_day_valid_for_month = 1;
+
+  switch (month)
+  {
+  case 2:
+    if (is_leap_year(year))
+    {
+      is_day_valid_for_month = day <= 29;
+    }
+    else
+    {
+      is_day_valid_for_month = day <= 28;
+    }
+    break;
+  case 4:
+  case 6:
+  case 9:
+  case 11:
+    is_day_valid_for_month = day <= 30;
+    break;
+  default:
+    is_day_valid_for_month = day <= 31;
+    break;
+  }
+
+  return is_day_valid_for_month;
 }
 
 /*
@@ -118,29 +162,47 @@ int q1(char data[])
     4 -> datainicial > datafinal
     Caso o cálculo esteja correto, os atributos qtdDias, qtdMeses e qtdAnos devem ser preenchidos com os valores correspondentes.
  */
-DiasMesesAnos q2(char datainicial[], char datafinal[])
+DiasMesesAnos q2(char start_date[], char final_date[])
 {
-
-  // calcule os dados e armazene nas três variáveis a seguir
   DiasMesesAnos dma;
 
-  if (q1(datainicial) == 0)
+  if (q1(start_date) == 0)
   {
     dma.retorno = 2;
     return dma;
   }
-  else if (q1(datafinal) == 0)
+  else if (q1(final_date) == 0)
   {
     dma.retorno = 3;
     return dma;
   }
   else
   {
-    // verifique se a data final não é menor que a data inicial
+    DataQuebrada start = quebraData(start_date);
+    DataQuebrada end = quebraData(final_date);
 
-    // calcule a distancia entre as datas
+    if (start.iAno > end.iAno || (start.iAno == end.iAno && start.iMes > end.iMes) || (start.iAno == end.iAno && start.iMes == end.iMes && start.iDia > end.iDia))
+    {
+      dma.retorno = 4;
+      return dma;
+    }
 
-    // se tudo der certo
+    dma.qtdAnos = end.iAno - start.iAno;
+    dma.qtdMeses = end.iMes - start.iMes;
+    dma.qtdDias = end.iDia - start.iDia;
+
+    if (dma.qtdDias < 0)
+    {
+      dma.qtdDias += 30;
+      dma.qtdMeses--;
+    }
+
+    if (dma.qtdMeses < 0)
+    {
+      dma.qtdMeses += 12;
+      dma.qtdAnos--;
+    }
+
     dma.retorno = 1;
     return dma;
   }
@@ -152,15 +214,48 @@ DiasMesesAnos q2(char datainicial[], char datafinal[])
     Pesquisar quantas vezes um determinado caracter ocorre em um texto
  @entrada
     uma string texto, um caracter c e um inteiro que informa se é uma pesquisa Case Sensitive ou não. Se isCaseSensitive = 1, a pesquisa deve considerar diferenças entre maiúsculos e minúsculos.
-        Se isCaseSensitive != 1, a pesquisa não deve  considerar diferenças entre maiúsculos e minúsculos.
+        Se isCaseSensitive != 1, a pesquisa não deve considerar diferenças entre maiúsculos e minúsculos.
  @saida
     Um número n >= 0.
  */
-int q3(char *texto, char c, int isCaseSensitive)
+int q3(char *text, char character, int is_case_sensitive)
 {
-  int qtdOcorrencias = -1;
+  int diff_between_cases = 'a' - 'A';
 
-  return qtdOcorrencias;
+  int root_of_lowercase = 'a';
+  int limit_of_lowercase = 'z';
+  int root_of_uppercase = 'A';
+  int limit_of_uppercase = 'Z';
+
+  int occurences = 0;
+
+  for (int index = 0; index < strlen(text); index++)
+  {
+    char pointer = text[index];
+
+    if (is_case_sensitive == 1)
+    {
+      if (pointer == character)
+        occurences++;
+    }
+    else
+    {
+      if (pointer >= root_of_lowercase && pointer <= limit_of_lowercase)
+      {
+        pointer -= diff_between_cases;
+      }
+
+      if (character >= root_of_lowercase && character <= limit_of_lowercase)
+      {
+        character -= diff_between_cases;
+      }
+
+      if (pointer == character)
+        occurences++;
+    }
+  }
+
+  return occurences;
 }
 
 /*
@@ -178,11 +273,38 @@ int q3(char *texto, char c, int isCaseSensitive)
         O retorno da função, n, nesse caso seria 1;
 
  */
-int q4(char *strTexto, char *strBusca, int posicoes[30])
+int q4(char *text, char *target, int positions[30])
 {
-  int qtdOcorrencias = -1;
+  remove_accents(text);
+  remove_accents(target);
 
-  return qtdOcorrencias;
+  int occurrences = 0;
+
+  for (int index = 0; index < strlen(text); index++)
+  {
+    if (text[index] == target[0])
+    {
+      int matched = 1;
+
+      for (int j = 0; j < strlen(target); j++)
+      {
+        if (text[index + j] != target[j])
+        {
+          matched = 0;
+          break;
+        }
+      }
+
+      if (matched)
+      {
+        positions[occurrences * 2] = index + 1;
+        positions[occurrences * 2 + 1] = index + strlen(target);
+        occurrences++;
+      }
+    }
+  }
+
+  return occurrences;
 }
 
 /*
@@ -195,10 +317,46 @@ int q4(char *strTexto, char *strBusca, int posicoes[30])
     Número invertido
  */
 
-int q5(int num)
+int q5(int number)
 {
+  int params[10];
 
-  return num;
+  for (int counter = 0; counter < 10; counter++)
+    params[counter] = -1;
+
+  int index = 0;
+
+  while (number > 0)
+  {
+    params[index] = number % 10;
+    number /= 10;
+    index++;
+  }
+
+  int result = 0;
+
+  for (int counter = 0; counter < 10; counter++)
+  {
+    if (params[counter] == -1)
+      break;
+
+    result += params[counter] * power(10, index - 1);
+    index--;
+  }
+
+  return result;
+}
+
+int power(int base, int exponent)
+{
+  int result = 1;
+
+  for (int index = 0; index < exponent; index++)
+  {
+    result *= base;
+  }
+
+  return result;
 }
 
 /*
@@ -211,10 +369,73 @@ int q5(int num)
     Quantidade de vezes que número de busca ocorre em número base
  */
 
-int q6(int numerobase, int numerobusca)
+int q6(int base_number, int target_number)
 {
-  int qtdOcorrencias;
-  return qtdOcorrencias;
+  int occurences = 0;
+
+  int base_digits[30];
+  int target_digits[30];
+
+  for (int i = 0; i < 30; i++)
+  {
+    base_digits[i] = -1;
+    target_digits[i] = -1;
+  }
+
+  int index = 0;
+
+  while (base_number > 0)
+  {
+    base_digits[index] = base_number % 10;
+    base_number /= 10;
+    index++;
+  }
+
+  int is_composed_number = target_number > 9;
+
+  if (is_composed_number)
+  {
+    index = 0;
+    while (target_number > 0)
+    {
+      target_digits[index] = target_number % 10;
+      target_number /= 10;
+      index++;
+    }
+  }
+
+  for (int i = 0; i < 30; i++)
+  {
+    if (base_digits[i] == -1)
+      break;
+
+    if (!is_composed_number)
+    {
+      if (base_digits[i] == target_number)
+        occurences++;
+    }
+    else
+    {
+      int matched = 1;
+
+      for (int j = 0; j < 30; j++)
+      {
+        if (target_digits[j] == -1)
+          break;
+
+        if (base_digits[i + j] != target_digits[j])
+        {
+          matched = 0;
+          break;
+        }
+      }
+
+      if (matched)
+        occurences++;
+    }
+  }
+
+  return occurences;
 }
 
 DataQuebrada quebraData(char data[])
@@ -284,4 +505,58 @@ DataQuebrada quebraData(char data[])
   dq.valido = 1;
 
   return dq;
+}
+
+// stolen from https://github.com/johncobain/INF029-Andrey-Gomes-da-Silva-Nascimento/blob/main/Trabalho1/AndreyGomes20241160024.c
+// fazuelli
+void remove_accents(char *text)
+{
+  int i, j = 0;
+#ifdef _WIN32
+  SetConsoleOutputCP(CP_UTF8);
+#elif __linux__
+  setlocale(LC_ALL, "Portuguese");
+#else
+#endif
+
+  const char *comAcentos[] = {"Ä", "Å", "Á", "Â", "À", "Ã", "ä", "á", "â", "à", "ã",
+                              "É", "Ê", "Ë", "È", "é", "ê", "ë", "è",
+                              "Í", "Î", "Ï", "Ì", "í", "î", "ï", "ì",
+                              "Ö", "Ó", "Ô", "Ò", "Õ", "ö", "ó", "ô", "ò", "õ",
+                              "Ü", "Ú", "Û", "ü", "ú", "û", "ù",
+                              "Ç", "ç"};
+
+  const char *semAcentos[] = {"A", "A", "A", "A", "A", "A", "a", "a", "a", "a", "a",
+                              "E", "E", "E", "E", "e", "e", "e", "e",
+                              "I", "I", "I", "I", "i", "i", "i", "i",
+                              "O", "O", "O", "O", "O", "o", "o", "o", "o", "o",
+                              "U", "U", "U", "u", "u", "u", "u",
+                              "C", "c"};
+
+  char buffer[256];
+  buffer[0] = '\0';
+
+  for (int i = 0; i < strlen(text);)
+  {
+    int found = 0;
+    // Tenta substituir cada caractere acentuado por seu equivalente
+    for (int j = 0; j < sizeof(comAcentos) / sizeof(comAcentos[0]); j++)
+    {
+      int len = strlen(comAcentos[j]);
+
+      if (strncmp(&text[i], comAcentos[j], len) == 0)
+      {
+        strcat(buffer, semAcentos[j]);
+        i += len;
+        found = 1;
+        break;
+      }
+    }
+    if (!found)
+    {
+      strncat(buffer, &text[i], 1);
+      i++;
+    }
+  }
+  strcpy(text, buffer);
 }
