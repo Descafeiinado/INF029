@@ -1,7 +1,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #define TAM 10
+
+#define DATA_SEPARATOR 59
+#define ARRAY_SEPARATOR 44
 
 #include "EstruturaVetores.h"
 
@@ -23,6 +27,122 @@ typedef struct Data
 } Data;
 
 Data *data;
+
+void serializeData(Data *data, char *string)
+{
+  char data_separator_character[2] = {DATA_SEPARATOR, 0};
+  char array_separator_character[2] = {ARRAY_SEPARATOR, 0};
+
+  char array[1000];
+  char array_value[10];
+
+  strcpy(string, "");
+
+  sprintf(array, "%d%c", data->length, DATA_SEPARATOR);
+
+  for (int i = 0; i < data->sentinel; i++)
+  {
+    sprintf(array_value, "%d", data->array[i]);
+    strcat(array, array_value);
+
+    if (i < data->sentinel - 1)
+    {
+      strcat(array, array_separator_character);
+    }
+  }
+
+  strcat(string, array);
+}
+
+int deserializeData(Data *data, char *string)
+{
+  char data_separator_character[2] = {DATA_SEPARATOR, 0};
+  char array_separator_character[2] = {ARRAY_SEPARATOR, 0};
+
+  char *data_pointer;
+  char *data_token = strtok_r(string, data_separator_character, &data_pointer);
+  int data_position = 0;
+
+  while (data_token != NULL)
+  {
+    switch (data_position)
+    {
+    case 0:
+      data->length = atoi(data_token);
+      break;
+
+    case 1:
+      char *array_pointer;
+      char *array_token = strtok_r(data_token, array_separator_character, &array_pointer);
+      int array_position = 0;
+
+      if (data->length == 0)
+      {
+        break;
+      }
+
+      while (array_token != NULL)
+      {
+        if (data->array == NULL)
+        {
+          data->array = (int *)malloc(sizeof(int) * data->length);
+        }
+
+        data->array[array_position] = atoi(array_token);
+        data->sentinel++;
+
+        array_token = strtok_r(NULL, array_separator_character, &array_pointer);
+        array_position++;
+      }
+    }
+
+    data_token = strtok_r(NULL, data_separator_character, &data_pointer);
+    data_position++;
+  }
+
+  return 0;
+}
+
+void loadFromDisk()
+{
+  FILE *file = fopen("data.txt", "r");
+
+  if (file == NULL)
+  {
+    return;
+  }
+
+  char line[1000];
+  int index = 0;
+
+  while (fgets(line, 1000, file) != NULL)
+  {
+    deserializeData(&data[index], line);
+    index++;
+  }
+
+  fclose(file);
+}
+
+void saveToDisk()
+{
+  FILE *file = fopen("data.txt", "w+");
+
+  if (file == NULL)
+  {
+    return;
+  }
+
+  char line[1000];
+
+  for (int i = 0; i < TAM; i++)
+  {
+    serializeData(&data[i], line);
+    fprintf(file, "%s\n", line);
+  }
+
+  fclose(file);
+}
 
 /*
 Objetivo: criar estrutura auxiliar na posição 'posicao'.
@@ -444,6 +564,8 @@ void inicializar()
     data[index].length = 0;
     data[index].sentinel = 0;
   }
+
+  loadFromDisk();
 }
 
 /*
@@ -454,6 +576,8 @@ para poder liberar todos os espaços de memória das estruturas auxiliares.
 
 void finalizar()
 {
+  saveToDisk();
+
   for (int index = 0; index < TAM; index++)
   {
     if (data[index].array != NULL)
