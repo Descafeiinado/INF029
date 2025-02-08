@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #define TAM 10
 
 #define DATA_SEPARATOR 59
@@ -59,7 +60,7 @@ int deserializeData(Data *data, char *string)
   char data_separator_character[2] = {DATA_SEPARATOR, 0};
   char array_separator_character[2] = {ARRAY_SEPARATOR, 0};
 
-  char *data_pointer;
+  char *data_pointer = NULL;
   char *data_token = strtok_r(string, data_separator_character, &data_pointer);
   int data_position = 0;
 
@@ -71,8 +72,8 @@ int deserializeData(Data *data, char *string)
       data->length = atoi(data_token);
       break;
 
-    case 1:
-      char *array_pointer;
+    case 1: {
+      char *array_pointer = NULL;
       char *array_token = strtok_r(data_token, array_separator_character, &array_pointer);
       int array_position = 0;
 
@@ -94,6 +95,10 @@ int deserializeData(Data *data, char *string)
         array_token = strtok_r(NULL, array_separator_character, &array_pointer);
         array_position++;
       }
+    }
+      
+    default:
+      break;
     }
 
     data_token = strtok_r(NULL, data_separator_character, &data_pointer);
